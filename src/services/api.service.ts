@@ -24,9 +24,16 @@ class ApiService {
         this.api.interceptors.response.use(
             (response) => response,
             (error: AxiosError) => {
-                // Handle common errors
+                // Handle 401 Unauthorized - redirect to login
                 if (error.response?.status === 401) {
-                    console.error("Unauthorized - Please login");
+                    // Only redirect if we're in the browser (not during SSR)
+                    // and not already on an auth page
+                    if (typeof window !== "undefined") {
+                        const isOnAuthPage = window.location.pathname.startsWith("/auth/");
+                        if (!isOnAuthPage) {
+                            window.location.href = "/auth/sign-in";
+                        }
+                    }
                 }
                 return Promise.reject(error);
             }

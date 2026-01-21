@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import apiService from "@/services/api.service";
-import type { User, LoginCredentials } from "@/types/user.types";
+import type { User, LoginCredentials, UserRole } from "@/types/user.types";
 
 interface AuthContextType {
     user: User | null;
@@ -30,14 +30,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(true);
             setError(null);
             const response = await apiService.getCurrentUser();
-            setUser(response.user);
+            // Response is the user object directly: {id, username, role}
+            // Normalize role to uppercase to match our types
+            const normalizedUser = {
+                ...response,
+                role: response.role.toUpperCase() as UserRole,
+            };
+
+            setUser(normalizedUser);
         } catch (err: any) {
             // If not authenticated, clear user state
-            if (err.response?.status === 401) {
-                setUser(null);
-            } else {
-                console.error("Error fetching user:", err);
-            }
+            setUser(null);
+            // Don't redirect here - let the middleware handle it
         } finally {
             setLoading(false);
         }
@@ -51,10 +55,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setLoading(true);
             setError(null);
             const response = await apiService.login(credentials);
-            setUser(response.user);
+
+            // Normalize role to uppercase to match our types
+            const normalizedUser = {
+                ...response.user,
+                role: response.user.role.toUpperCase() as UserRole,
+            };
+
+            setUser(normalizedUser);
 
             // Role-based redirection
-            switch (response.user.role) {
+            switch (normalizedUser.role) {
                 case "RH":
                     router.push("/dashboard/rh");
                     break;

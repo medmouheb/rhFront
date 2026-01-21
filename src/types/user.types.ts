@@ -29,8 +29,7 @@ export interface AuthResponse {
 }
 
 /**
- * API response for current user endpoint
+ * Response from GET /api/auth/me
+ * Returns user object directly: {id, username, role}
  */
-export interface CurrentUserResponse {
-  user: User;
-}
+export type CurrentUserResponse = User;

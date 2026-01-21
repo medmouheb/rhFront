@@ -60,14 +60,24 @@ export const NAV_DATA: NavSection[] = [
 export function getNavDataForRole(role: UserRole | null): NavSection[] {
   if (!role) return [];
 
+  const dashboardUrl = getDashboardUrl(role);
+
   return NAV_DATA.map((section) => ({
     ...section,
-    items: section.items.filter((item) => {
-      // If item has no role restrictions, show it to all
-      if (!item.roles || item.roles.length === 0) return true;
-      // Otherwise, check if user's role is in the allowed roles
-      return item.roles.includes(role);
-    }),
+    items: section.items
+      .filter((item) => {
+        // If item has no role restrictions, show it to all
+        if (!item.roles || item.roles.length === 0) return true;
+        // Otherwise, check if user's role is in the allowed roles
+        return item.roles.includes(role);
+      })
+      .map((item) => {
+        // Update Dashboard URL based on role
+        if (item.title === "Dashboard") {
+          return { ...item, url: dashboardUrl };
+        }
+        return item;
+      }),
   })).filter((section) => section.items.length > 0); // Remove empty sections
 }
 

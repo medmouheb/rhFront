@@ -165,11 +165,15 @@ export default function CandidatesPage() {
                                                 <Link
                                                     href={`/candidates/${candidate.id}`}
                                                     className="text-blue-600 hover:text-blue-700"
+                                                    aria-label={`View ${candidate.firstName} ${candidate.lastName}`}
                                                 >
                                                     <Eye className="h-5 w-5" />
                                                 </Link>
                                                 {canEdit && (
-                                                    <button className="text-yellow-600 hover:text-yellow-700">
+                                                    <button
+                                                        className="text-yellow-600 hover:text-yellow-700"
+                                                        aria-label={`Edit ${candidate.firstName} ${candidate.lastName}`}
+                                                    >
                                                         <Edit className="h-5 w-5" />
                                                     </button>
                                                 )}
@@ -177,6 +181,7 @@ export default function CandidatesPage() {
                                                     <button
                                                         onClick={() => handleDelete(candidate.id)}
                                                         className="text-red-600 hover:text-red-700"
+                                                        aria-label={`Delete ${candidate.firstName} ${candidate.lastName}`}
                                                     >
                                                         <Trash2 className="h-5 w-5" />
                                                     </button>

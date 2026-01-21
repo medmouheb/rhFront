@@ -6,6 +6,7 @@ import type { User } from "@/types/user.types";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth.context";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { UserDialog } from "@/components/dialogs/user-dialog";
 
 export default function UsersPage() {
     const { user: currentUser } = useAuth();
@@ -13,6 +14,11 @@ export default function UsersPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [roleFilter, setRoleFilter] = useState("");
+
+    // Dialog state
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     // Only RH can access this page
     if (currentUser?.role !== "RH") {
@@ -44,6 +50,27 @@ export default function UsersPage() {
         }
     };
 
+    const handleCreate = () => {
+        setSelectedUser(null);
+        setDialogMode("create");
+        setIsDialogOpen(true);
+    };
+
+    const handleEdit = (user: User) => {
+        setSelectedUser(user);
+        setDialogMode("edit");
+        setIsDialogOpen(true);
+    };
+
+    const handleSave = async (userData: { username: string; password?: string; role: any }) => {
+        if (dialogMode === "create") {
+            await usersService.createUser(userData);
+        } else if (selectedUser) {
+            await usersService.updateUser((selectedUser as any)._id, userData);
+        }
+        fetchUsers();
+    };
+
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure you want to delete this user?")) return;
 
@@ -67,7 +94,10 @@ export default function UsersPage() {
                         Manage system users and their roles
                     </p>
                 </div>
-                <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90">
+                <button
+                    onClick={handleCreate}
+                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90"
+                >
                     <Plus className="h-5 w-5" />
                     Add User
                 </button>
@@ -113,9 +143,9 @@ export default function UsersPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                {users.map((user) => (
+                                {users.filter((user) => { return (roleFilter === "" || user.role.toLowerCase() === roleFilter.toLowerCase()) }).map((user) => (
                                     <tr
-                                        key={user.id}
+                                        key={(user as any)._id}
                                         className="hover:bg-gray-50 dark:hover:bg-gray-800"
                                     >
                                         <td className="px-6 py-4">
@@ -140,12 +170,17 @@ export default function UsersPage() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex justify-end gap-2">
-                                                <button className="text-yellow-600 hover:text-yellow-700">
+                                                <button
+                                                    onClick={() => handleEdit(user)}
+                                                    className="text-yellow-600 hover:text-yellow-700"
+                                                    aria-label={`Edit user ${user.username}`}
+                                                >
                                                     <Edit className="h-5 w-5" />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(user.id)}
+                                                    onClick={() => handleDelete((user as any)._id)}
                                                     className="text-red-600 hover:text-red-700"
+                                                    aria-label={`Delete user ${user.username}`}
                                                 >
                                                     <Trash2 className="h-5 w-5" />
                                                 </button>
@@ -158,6 +193,15 @@ export default function UsersPage() {
                     </div>
                 )}
             </div>
+
+            {/* User Dialog */}
+            <UserDialog
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                onSave={handleSave}
+                user={selectedUser}
+                mode={dialogMode}
+            />
         </div>
     );
 }
