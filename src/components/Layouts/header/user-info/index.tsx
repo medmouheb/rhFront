@@ -6,19 +6,23 @@ import {
   DropdownContent,
   DropdownTrigger,
 } from "@/components/ui/dropdown";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
+import { useAuth } from "@/contexts/auth.context";
 
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuth();
 
-  const USER = {
-    name: "John Smith",
-    email: "johnson@nextadmin.com",
-    img: "/images/user/user-03.png",
+  if (!user) return null;
+
+  const handleLogout = async () => {
+    await logout();
+    setIsOpen(false);
   };
 
   return (
@@ -27,16 +31,13 @@ export function UserInfo() {
         <span className="sr-only">My Account</span>
 
         <figure className="flex items-center gap-3">
-          <Image
-            src={USER.img}
-            className="size-12"
-            alt={`Avatar of ${USER.name}`}
-            role="presentation"
-            width={200}
-            height={200}
-          />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">
+            <span className="text-lg font-bold">
+              {user.username.charAt(0).toUpperCase()}
+            </span>
+          </div>
           <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
-            <span>{USER.name}</span>
+            <span>{user.username}</span>
 
             <ChevronUpIcon
               aria-hidden
@@ -57,21 +58,24 @@ export function UserInfo() {
         <h2 className="sr-only">User information</h2>
 
         <figure className="flex items-center gap-2.5 px-5 py-3.5">
-          <Image
-            src={USER.img}
-            className="size-12"
-            alt={`Avatar for ${USER.name}`}
-            role="presentation"
-            width={200}
-            height={200}
-          />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">
+            <span className="text-lg font-bold">
+              {user.username.charAt(0).toUpperCase()}
+            </span>
+          </div>
 
           <figcaption className="space-y-1 text-base font-medium">
             <div className="mb-2 leading-none text-dark dark:text-white">
-              {USER.name}
+              {user.username}
             </div>
 
-            <div className="leading-none text-gray-6">{USER.email}</div>
+            <Badge variant={
+              user.role === "RH" ? "error" :
+                user.role === "Manager" ? "warning" :
+                  user.role === "Directeur" ? "success" : "info"
+            }>
+              {user.role}
+            </Badge>
           </figcaption>
         </figure>
 
@@ -106,7 +110,7 @@ export function UserInfo() {
         <div className="p-2 text-base text-[#4B5563] dark:text-dark-6">
           <button
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
-            onClick={() => setIsOpen(false)}
+            onClick={handleLogout}
           >
             <LogOutIcon />
 
@@ -117,3 +121,4 @@ export function UserInfo() {
     </Dropdown>
   );
 }
+

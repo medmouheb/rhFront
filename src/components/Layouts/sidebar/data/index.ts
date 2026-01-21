@@ -1,105 +1,90 @@
 import * as Icons from "../icons";
+import type { UserRole } from "@/types/user.types";
 
-export const NAV_DATA = [
+export interface NavItem {
+  title: string;
+  url?: string;
+  icon: React.FC<any>;
+  items: { title: string; url: string }[];
+  roles?: UserRole[]; // Which roles can see this item
+}
+
+export interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+export const NAV_DATA: NavSection[] = [
   {
     label: "MAIN MENU",
     items: [
       {
         title: "Dashboard",
         icon: Icons.HomeIcon,
-        items: [
-          {
-            title: "eCommerce",
-            url: "/",
-          },
-        ],
-      },
-      {
-        title: "Calendar",
-        url: "/calendar",
-        icon: Icons.Calendar,
         items: [],
+        url: "/", // This will be overridden based on role
       },
       {
-        title: "Profile",
-        url: "/profile",
+        title: "Users",
+        url: "/users",
         icon: Icons.User,
         items: [],
+        roles: ["RH"], // Only RH can see this
       },
       {
-        title: "Forms",
+        title: "Candidates",
+        url: "/candidates",
+        icon: Icons.User,
+        items: [],
+        // All authenticated users can see this
+      },
+      {
+        title: "Hiring Requests",
+        url: "/hiring-requests",
         icon: Icons.Alphabet,
-        items: [
-          {
-            title: "Form Elements",
-            url: "/forms/form-elements",
-          },
-          {
-            title: "Form Layout",
-            url: "/forms/form-layout",
-          },
-        ],
+        items: [],
       },
       {
-        title: "Tables",
-        url: "/tables",
-        icon: Icons.Table,
-        items: [
-          {
-            title: "Tables",
-            url: "/tables",
-          },
-        ],
-      },
-      {
-        title: "Pages",
-        icon: Icons.Alphabet,
-        items: [
-          {
-            title: "Settings",
-            url: "/pages/settings",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    label: "OTHERS",
-    items: [
-      {
-        title: "Charts",
-        icon: Icons.PieChart,
-        items: [
-          {
-            title: "Basic Chart",
-            url: "/charts/basic-chart",
-          },
-        ],
-      },
-      {
-        title: "UI Elements",
-        icon: Icons.FourCircle,
-        items: [
-          {
-            title: "Alerts",
-            url: "/ui-elements/alerts",
-          },
-          {
-            title: "Buttons",
-            url: "/ui-elements/buttons",
-          },
-        ],
-      },
-      {
-        title: "Authentication",
-        icon: Icons.Authentication,
-        items: [
-          {
-            title: "Sign In",
-            url: "/auth/sign-in",
-          },
-        ],
+        title: "Interviews",
+        url: "/interviews",
+        icon: Icons.Calendar,
+        items: [],
       },
     ],
   },
 ];
+
+/**
+ * Filter navigation items based on user role
+ */
+export function getNavDataForRole(role: UserRole | null): NavSection[] {
+  if (!role) return [];
+
+  return NAV_DATA.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => {
+      // If item has no role restrictions, show it to all
+      if (!item.roles || item.roles.length === 0) return true;
+      // Otherwise, check if user's role is in the allowed roles
+      return item.roles.includes(role);
+    }),
+  })).filter((section) => section.items.length > 0); // Remove empty sections
+}
+
+/**
+ * Get role-specific dashboard URL
+ */
+export function getDashboardUrl(role: UserRole): string {
+  switch (role) {
+    case "RH":
+      return "/dashboard/rh";
+    case "Manager":
+      return "/dashboard/manager";
+    case "CO":
+      return "/dashboard/co";
+    case "Directeur":
+      return "/dashboard/directeur";
+    default:
+      return "/";
+  }
+}
