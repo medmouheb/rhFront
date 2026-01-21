@@ -2,12 +2,15 @@
  * Candidate status types
  */
 export type CandidateStatus =
-    | "Applied"
-    | "Screening"
-    | "Interview"
-    | "Offered"
-    | "Hired"
-    | "Rejected";
+    | "RECEIVED"
+    | "SHORTLISTED"
+    | "TECHNICAL_INTERVIEW"
+    | "HR_INTERVIEW"
+    | "SELECTED"
+    | "MEDICAL_VISIT"
+    | "OFFER_SENT"
+    | "HIRED"
+    | "REJECTED";
 
 /**
  * Candidate interface
@@ -17,15 +20,15 @@ export interface Candidate {
     firstName: string;
     lastName: string;
     email: string;
-    phone: string;
+    phone?: string;
     position: string;
+    positionAppliedFor?: string;
     status: CandidateStatus;
+    resume?: string;
+    coverLetter?: string;
     source?: string;
-    notes?: string;
-    cvUrl?: string;
-    documentsUrl?: string;
-    createdAt: string;
-    updatedAt?: string;
+    appliedDate: string;
+    documents?: string[];
 }
 
 /**

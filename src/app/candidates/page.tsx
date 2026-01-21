@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth.context";
 import Link from "next/link";
 import { Eye, Edit, Trash2, Plus, Search } from "lucide-react";
+import { CandidateDialog } from "@/components/dialogs/candidate-dialog";
 
 export default function CandidatesPage() {
     const { user } = useAuth();
@@ -15,6 +16,11 @@ export default function CandidatesPage() {
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("");
+
+    // Dialog state
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
+    const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
 
     useEffect(() => {
         fetchCandidates();
@@ -28,12 +34,33 @@ export default function CandidatesPage() {
                 status: statusFilter || undefined,
                 search: searchTerm || undefined,
             });
-            setCandidates(response.candidates || []);
+            setCandidates(response.data || []);
         } catch (err: any) {
             setError(err.message || "Failed to fetch candidates");
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCreate = () => {
+        setSelectedCandidate(null);
+        setDialogMode("create");
+        setIsDialogOpen(true);
+    };
+
+    const handleEdit = (candidate: Candidate) => {
+        setSelectedCandidate(candidate);
+        setDialogMode("edit");
+        setIsDialogOpen(true);
+    };
+
+    const handleSave = async (candidateData: any) => {
+        if (dialogMode === "create") {
+            await candidatesService.createCandidate(candidateData);
+        } else if (selectedCandidate) {
+            await candidatesService.updateCandidate((selectedCandidate as any)._id, candidateData);
+        }
+        fetchCandidates();
     };
 
     const handleDelete = async (id: string) => {
@@ -63,13 +90,13 @@ export default function CandidatesPage() {
                     </p>
                 </div>
                 {canEdit && (
-                    <Link
-                        href="/candidates/new"
+                    <button
+                        onClick={handleCreate}
                         className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary/90"
                     >
                         <Plus className="h-5 w-5" />
                         Add Candidate
-                    </Link>
+                    </button>
                 )}
             </div>
 
@@ -92,12 +119,15 @@ export default function CandidatesPage() {
                         className="rounded-lg border border-gray-300 px-4 py-2 dark:border-gray-600 dark:bg-gray-800"
                     >
                         <option value="">All Statuses</option>
-                        <option value="Applied">Applied</option>
-                        <option value="Screening">Screening</option>
-                        <option value="Interview">Interview</option>
-                        <option value="Offered">Offered</option>
-                        <option value="Hired">Hired</option>
-                        <option value="Rejected">Rejected</option>
+                        <option value="RECEIVED">Received</option>
+                        <option value="SHORTLISTED">Shortlisted</option>
+                        <option value="TECHNICAL_INTERVIEW">Technical Interview</option>
+                        <option value="HR_INTERVIEW">HR Interview</option>
+                        <option value="SELECTED">Selected</option>
+                        <option value="MEDICAL_VISIT">Medical Visit</option>
+                        <option value="OFFER_SENT">Offer Sent</option>
+                        <option value="HIRED">Hired</option>
+                        <option value="REJECTED">Rejected</option>
                     </select>
                 </div>
             </div>
@@ -127,6 +157,9 @@ export default function CandidatesPage() {
                                         Position
                                     </th>
                                     <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
+                                        Applied For
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-300">
                                         Status
                                     </th>
                                     <th className="px-6 py-3 text-right text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -137,7 +170,7 @@ export default function CandidatesPage() {
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                 {candidates.map((candidate) => (
                                     <tr
-                                        key={candidate.id}
+                                        key={(candidate as any)._id}
                                         className="hover:bg-gray-50 dark:hover:bg-gray-800"
                                     >
                                         <td className="px-6 py-4">
@@ -151,19 +184,24 @@ export default function CandidatesPage() {
                                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                                             {candidate.position}
                                         </td>
+                                        <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
+                                            {candidate.positionAppliedFor || "-"}
+                                        </td>
                                         <td className="px-6 py-4">
                                             <Badge variant={
-                                                candidate.status === "Hired" ? "success" :
-                                                    candidate.status === "Rejected" ? "error" :
-                                                        candidate.status === "Interview" ? "warning" : "info"
+                                                candidate.status === "HIRED" ? "success" :
+                                                    candidate.status === "REJECTED" ? "error" :
+                                                        candidate.status === "OFFER_SENT" || candidate.status === "SELECTED" ? "success" :
+                                                            candidate.status === "TECHNICAL_INTERVIEW" || candidate.status === "HR_INTERVIEW" ? "warning" :
+                                                                candidate.status === "SHORTLISTED" ? "info" : "default"
                                             }>
-                                                {candidate.status}
+                                                {candidate.status.replace(/_/g, ' ')}
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex justify-end gap-2">
                                                 <Link
-                                                    href={`/candidates/${candidate.id}`}
+                                                    href={`/candidates/${(candidate as any)._id}`}
                                                     className="text-blue-600 hover:text-blue-700"
                                                     aria-label={`View ${candidate.firstName} ${candidate.lastName}`}
                                                 >
@@ -171,6 +209,7 @@ export default function CandidatesPage() {
                                                 </Link>
                                                 {canEdit && (
                                                     <button
+                                                        onClick={() => handleEdit(candidate)}
                                                         className="text-yellow-600 hover:text-yellow-700"
                                                         aria-label={`Edit ${candidate.firstName} ${candidate.lastName}`}
                                                     >
@@ -179,7 +218,7 @@ export default function CandidatesPage() {
                                                 )}
                                                 {canDelete && (
                                                     <button
-                                                        onClick={() => handleDelete(candidate.id)}
+                                                        onClick={() => handleDelete((candidate as any)._id)}
                                                         className="text-red-600 hover:text-red-700"
                                                         aria-label={`Delete ${candidate.firstName} ${candidate.lastName}`}
                                                     >
@@ -195,6 +234,15 @@ export default function CandidatesPage() {
                     </div>
                 )}
             </div>
+
+            {/* Candidate Dialog */}
+            <CandidateDialog
+                isOpen={isDialogOpen}
+                onClose={() => setIsDialogOpen(false)}
+                onSave={handleSave}
+                candidate={selectedCandidate}
+                mode={dialogMode}
+            />
         </div>
     );
 }
